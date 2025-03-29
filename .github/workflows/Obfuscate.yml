@@ -23,18 +23,10 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Install JavaScript Obfuscator
+      - name: Install Obfuscator & Obfuscate File
         run: |
           npm install -g javascript-obfuscator
-          javascript-obfuscator -v || (echo "Error: javascript-obfuscator installation failed." && exit 1)
-
-      - name: Download BPB Worker JS & Clean Previous Build
-        run: |
           wget -O origin.js https://raw.githubusercontent.com/bia-pain-bache/BPB-Worker-Panel/refs/heads/main/build/unobfuscated-worker.js
-          rm -f _worker.js  # 删除旧的 _worker.js（如果存在）
-
-      - name: Obfuscate BPB Worker JS
-        run: |
           javascript-obfuscator origin.js --output _worker.js \
             --compact true \
             --control-flow-flattening true \
@@ -47,16 +39,11 @@ jobs:
             --string-array-encoding 'rc4' \
             --string-array-threshold 1 \
             --transform-object-keys true \
-            --unicode-escape-sequence true \
-            > obfuscation.log 2>&1 || (cat obfuscation.log && exit 1)
-
-      - name: Test Obfuscated Code
-        run: |
-          node _worker.js > test_output.log 2>&1 || (cat test_output.log && echo "Error: Obfuscated code failed to run." && exit 1)
+            --unicode-escape-sequence true
 
       - name: Commit and Push Changes
-        if: success()
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: ':arrow_up: Update latest BPB panel'
           commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
+
