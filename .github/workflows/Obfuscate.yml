@@ -1,11 +1,11 @@
-name: Build Obfuscate BPB Panel
+name: Build & Deploy BPB Panel
 
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: "0 1 * * *"  # 每天凌晨 1:00 运行
+    - cron: "0 1 * * *"  # 每天凌晨 1:00 自动构建
 
 permissions:
   contents: write
@@ -29,21 +29,26 @@ jobs:
           wget -O origin.js https://raw.githubusercontent.com/bia-pain-bache/BPB-Worker-Panel/refs/heads/main/build/unobfuscated-worker.js
           javascript-obfuscator origin.js --output _worker.js \
             --compact true \
-            --control-flow-flattening true \
-            --control-flow-flattening-threshold 1 \
-            --dead-code-injection true \
-            --dead-code-injection-threshold 1 \
+            --control-flow-flattening false \
+            --dead-code-injection false \
             --identifier-names-generator hexadecimal \
-            --rename-globals true \
+            --rename-globals false \
             --string-array true \
-            --string-array-encoding 'rc4' \
-            --string-array-threshold 1 \
-            --transform-object-keys true \
-            --unicode-escape-sequence true
+            --string-array-encoding 'base64' \
+            --string-array-threshold 0.5 \
+            --unicode-escape-sequence false
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: ':arrow_up: Update latest BPB panel'
           commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
+
+      - name: Publish to Cloudflare Workers
+        run: |
+          npm install -g wrangler
+          wrangler publish
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+
 
