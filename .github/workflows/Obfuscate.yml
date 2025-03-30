@@ -30,7 +30,9 @@ jobs:
         run: |
           set -x  # 打开调试模式，显示每个命令执行过程
           npm install -g javascript-obfuscator wrangler@latest  # 安装混淆器和 wrangler
+          which javascript-obfuscator  # 显示 javascript-obfuscator 的路径
           javascript-obfuscator --version  # 输出 javascript-obfuscator 版本
+          which wrangler  # 显示 wrangler 的路径
           wrangler --version  # 输出 wrangler 版本
 
       # 获取 BPB Worker 脚本
