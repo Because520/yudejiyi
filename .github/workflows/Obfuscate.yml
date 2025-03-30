@@ -1,11 +1,11 @@
-name: Build & Deploy BPB Panel
+name: Build & Obfuscate BPB Panel
 
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: "0 1 * * *"  # 每天凌晨 1:00 自动构建
+    - cron: "0 1 * * *"  # 每天凌晨 1:00 运行
 
 permissions:
   contents: write
@@ -15,40 +15,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 检出代码
       - name: Check out the code
         uses: actions/checkout@v4
 
+      # 设置 Node.js 环境
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "18"  # 使用稳定版本
 
-      - name: Install Obfuscator & Obfuscate File
+      # 安装依赖
+      - name: Install dependencies
         run: |
-          npm install -g javascript-obfuscator
-          wget -O origin.js https://raw.githubusercontent.com/bia-pain-bache/BPB-Worker-Panel/refs/heads/main/build/unobfuscated-worker.js
+          npm install -g javascript-obfuscator wrangler@latest  # 安装混淆器和 wrangler
+
+      # 获取 BPB Worker 脚本
+      - name: Clone BPB worker.js
+        run: |
+          wget -q -O origin.js https://raw.githubusercontent.com/bia-pain-bache/BPB-Worker-Panel/main/build/unobfuscated-worker.js
+
+      # 执行代码混淆
+      - name: Obfuscate BPB worker.js
+        run: |
           javascript-obfuscator origin.js --output _worker.js \
             --compact true \
-            --control-flow-flattening false \
-            --dead-code-injection false \
+            --control-flow-flattening false \  # 减少控制流混淆
+            --dead-code-injection false \  # 减少死代码注入
             --identifier-names-generator hexadecimal \
-            --rename-globals false \
+            --rename-globals false \  # 避免全局变量重命名
             --string-array true \
-            --string-array-encoding 'base64' \
-            --string-array-threshold 0.5 \
-            --unicode-escape-sequence false
+            --string-array-encoding 'base64' \  # 使用 base64 编码
+            --string-array-threshold 0.5 \  # 提高字符串数组阈值
+            --unicode-escape-sequence false  # 避免 unicode 转义
 
+      # 提交混淆后的代码
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: ':arrow_up: Update latest BPB panel'
           commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
 
+      # 发布到 Cloudflare Workers
       - name: Publish to Cloudflare Workers
         run: |
-          npm install -g wrangler
-          wrangler publish
+          npx wrangler publish  # 使用 npx 发布
         env:
-          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}  # 从 GitHub Secrets 中获取 Cloudflare API Token
+
 
 
